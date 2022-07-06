@@ -15,6 +15,7 @@ void main() async {
   windowManager.waitUntilReadyToShow(windowOptions, () async {
     await windowManager.show();
     await windowManager.focus();
+    windowManager.setPosition(const Offset(100, 0));
   });
 
   runApp(const MyApp());
@@ -49,7 +50,7 @@ class MyHomePage extends StatefulWidget {
   }
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with WindowListener {
   bool isEditing = false;
   late TextEditingController _controller;
   final TextStyle _textStyle = const TextStyle(
@@ -61,6 +62,25 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     _controller = TextEditingController(text: "New HomePage");
+
+    windowManager.addListener(this);
+  }
+
+  @override
+  void dispose() {
+    windowManager.removeListener(this);
+    super.dispose();
+  }
+
+  @override
+  void onWindowFocus() {
+    setState(() {});
+  }
+
+  @override
+  void onWindowMoved() async {
+    Offset position = await windowManager.getPosition();
+    windowManager.setPosition(Offset(position.dx, 0));
   }
 
   void _submitNewName() {
