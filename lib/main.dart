@@ -16,6 +16,7 @@ void main() async {
     await windowManager.show();
     await windowManager.focus();
     windowManager.setPosition(const Offset(100, 0));
+    windowManager.setResizable(false);
   });
 
   runApp(const MyApp());
@@ -34,9 +35,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
       ),
       home: const Scaffold(
-        body: Padding(
-            padding: EdgeInsets.fromLTRB(10.0, 20.0, 10.0, 0),
-            child: MyHomePage()),
+        body: Padding(padding: EdgeInsets.all(0.0), child: MyHomePage()),
       ),
     );
   }
@@ -53,6 +52,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> with WindowListener {
   bool isEditing = false;
+  bool isWindowFocused = true;
   late TextEditingController _controller;
   final TextStyle _textStyle = const TextStyle(
     fontSize: 20.0,
@@ -75,13 +75,22 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
   @override
   void onWindowFocus() {
-    setState(() {});
+    setState(() {
+      isWindowFocused = true;
+    });
   }
 
   @override
-  void onWindowMoved() async {
-    Offset position = await windowManager.getPosition();
-    windowManager.setPosition(Offset(position.dx, 0));
+  void onWindowBlur() {
+    setState(() {
+      isWindowFocused = false;
+      isEditing = false;
+    });
+  }
+
+  @override
+  void onWindowMoved() {
+    // TODO: move to edge
   }
 
   void _submitNewName() {
@@ -92,38 +101,48 @@ class _MyHomePageState extends State<MyHomePage> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
-    if (!isEditing) {
-      return GestureDetector(
-        onTap: () {
-          setState(() {
-            isEditing = true;
-          });
-        },
-        child: Text(
-          _controller.text,
-          style: _textStyle,
-          textAlign: TextAlign.left,
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(2.0),
-      child: Focus(
-        onFocusChange: (hasFocus) {
-          if (!hasFocus) {
-            _submitNewName();
-          }
-        },
-        child: TextField(
+    List<Widget> children = [
+      DragToMoveArea(
+        child: Container(
+            height: 12,
+            decoration: const BoxDecoration(
+              color: Colors.grey,
+            )),
+      ),
+    ];
+    if (isWindowFocused) {
+      if (isEditing) {
+        children.add(TextField(
           style: _textStyle,
           autofocus: true,
           controller: _controller,
+          onChanged: (String val) {
+            // ignore: avoid_print
+            print('new string: $val');
+          },
           onSubmitted: (String val) {
             _submitNewName();
           },
-        ),
-      ),
+        ));
+      } else {
+        children.add(GestureDetector(
+          onTap: () {
+            setState(() {
+              isEditing = true;
+            });
+          },
+          child: Text(
+            _controller.text,
+            style: _textStyle,
+            textAlign: TextAlign.left,
+          ),
+        ));
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(0.0),
+      child: Column(children: children),
     );
   }
 }
